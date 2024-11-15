@@ -1,0 +1,90 @@
+# Quick Grid 
+
+```razor
+
+<h3>DemoGrid</h3>
+
+<QuickGrid  Items="@GetFoodsQueryable()" @ref="grid" Pagination="@pagination">
+    <PropertyColumn Property="@(p => p.FoodId)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Name)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.ExpiryDate)" Format="dd-MMM-yyyy" Sortable="true" />
+    <PropertyColumn Property="@(p => p.Price)" Sortable="true" />
+    <PropertyColumn Property="@(p => p.IsVegetarian)" Sortable="true">
+        <ColumnOptions>
+            <label>
+                <input type="checkbox" @bind="ShowVeg" /> Show Veg
+                <hr />
+                <button onclick="@ResetGridAsync">Reset</button>
+            </label>
+        </ColumnOptions>
+    </PropertyColumn>
+</QuickGrid>
+<Paginator State="@pagination"></Paginator>
+@code {
+    private bool? ShowVeg = null;
+    QuickGrid<Food>? grid;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 5};
+    record Food(int FoodId, string Name, DateOnly ExpiryDate, decimal Price, bool IsVegetarian);
+    async Task ResetGridAsync()
+    {
+        ShowVeg = null;
+        await grid.RefreshDataAsync();
+    }
+
+    IQueryable<Food> GetFoodsQueryable()
+    {
+        if (ShowVeg != null)
+        {
+            return foods.Where(f => f.IsVegetarian == ShowVeg).AsQueryable();
+        }
+        else
+        {
+            return foods.AsQueryable();
+        }
+    }
+
+    IQueryable<Food> foods = new[]
+    {
+        new Food(1001, "Apple", new DateOnly(2023, 1, 31), 150m, true),
+        new Food(1002, "Pasta", new DateOnly(2023, 2, 15), 300m, true),
+        new Food(1003, "Chicken", new DateOnly(2023, 1, 20), 850m, false),
+        new Food(1004, "Yogurt", new DateOnly(2023, 3, 5), 20m, true),
+        new Food(1005, "Vegetable Salad", new DateOnly(2023, 1, 10), 45m, true),
+        new Food(1006, "Chocolate", new DateOnly(2023, 4, 1), 50m, false),
+        new Food(1007, "Pizza", new DateOnly(2023, 1, 31), 150m, true),
+        new Food(1008, "Dosa", new DateOnly(2023, 2, 15), 300m, true),
+        new Food(1009, "Banana", new DateOnly(2023, 1, 20), 850m, false),
+        new Food(1010, "Kiwi", new DateOnly(2023, 3, 5), 20m, true),
+        new Food(1011, "Fruit salad", new DateOnly(2023, 1, 10), 45m, true),
+        new Food(1012, "Cold Coffee", new DateOnly(2023, 4, 1), 50m, false),
+    }.AsQueryable();
+}
+```
+
+
+# Implement Serach Functionality
+```razor
+<label for="searchText">Search:</label>
+<input type="text" id="searchText" @bind="searchText" @oninput="OnSearchTextChanged" />
+
+private string? searchText;
+
+async Task OnSearchTextChanged(ChangeEventArgs e)
+{
+    searchText = e.Value?.ToString();
+    await grid!.RefreshDataAsync();
+}
+
+IQueryable<Food> GetFoodsQueryable()
+{
+    var query = foods.AsQueryable();
+    if (ShowVeg != null)
+    {
+        return foods.Where(f => f.IsVegetarian == ShowVeg).AsQueryable();
+    }
+    if (!string.IsNullOrWhiteSpace(searchText)) { 
+        query = query.Where(f => f.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+    }
+    return query;
+}
+```
